@@ -4,11 +4,9 @@ using AdminService from '../../../srv/admin-service';
 //
 //	Role Management
 //
-/*
 annotate AdminService.Roles with {
   ID @Common.FieldControl: #ReadOnly;
 };
-*/
 
 annotate AdminService.Roles with @(
   UI: {
