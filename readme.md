@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/chgeo/bookshop-demo)
+
 # Bookshop Sample App
 
 Sample application showcasing different services serving the same set of data entities from a sqlite database. 
