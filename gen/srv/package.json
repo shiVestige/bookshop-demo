@@ -1,0 +1,176 @@
+{
+  "name": "bookshop-demo",
+  "version": "1.0.0",
+  "description": "A simple bookshop application, build in a self-contained all-in-one fashion, i.e. w/o reusing other packages.",
+  "repository": "https://github.wdf.sap.corp/caps/bookshop.git",
+  "license": "ISC",
+  "engines": {
+    "node": "^14"
+  },
+  "files": [
+    "db",
+    "srv"
+  ],
+  "dependencies": {
+    "@sap-cloud-sdk/core": "^1.48.0",
+    "@sap/cds": "^5.4.3",
+    "@sap/cds-dk": "^4.4.1",
+    "@sap/cds-odata-v2-adapter-proxy": "^1.7.9",
+    "@sap/hana-client": "^2.9.28",
+    "@sap/jobs-client": "^1.6.1",
+    "@sap/logging": "^6.0.3",
+    "@sap/xsenv": "^3.1.1",
+    "@sap/xssec": "^3.2.3",
+    "cf-http-client": "^1.3.0",
+    "cf-nodejs-logging-support": "^6.9.0",
+    "compression": "^1.7.4",
+    "express": "^4.17.1",
+    "helmet": "^4.6.0",
+    "mysql": "^2.18.1",
+    "passport": "^0.6.0",
+    "sap-cf-mailer": "^0.0.5"
+  },
+  "devDependencies": {
+    "@openui5/ts-types": "^1.90.5",
+    "cds-swagger-ui-express": "^0.2.0",
+    "copyfiles": "2.4.1",
+    "jest": "^27.0.6",
+    "npm-run-all": "^4.1.5",
+    "sqlite3": "^5.0.2",
+    "supertest": "^6.1.6"
+  },
+  "scripts": {
+    "setup": "run-s deploy build start",
+    "deploy": "cds deploy db --to sqlite:db/bookshop.db",
+    "deploy:cf": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf.mtaext",
+    "deploy:cf:ui": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf.mtaext -m bookshop-demo-deployer",
+    "deploy:cf:srv": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf.mtaext -m bookshop-demo-srv",
+    "deploy:cf:app": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf.mtaext -m bookshop-demo-ui",
+    "deploy:cf-hana-cloud": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf-hana-cloud.mtaext",
+    "deploy:cf-hana-cloud-job-standard": "cf deploy mta_archives/bookshop-demo_0.0.1.mtar -e cf-hana-cloud-job-standard.mtaext",
+    "deploy:hana": "cds deploy --to hana --vcap-file ./default-env.json",
+    "deploy:xsa": "xs deploy mta_archives/bookshop-demo_0.0.1.mtar",
+    "create:xsa:uaa": "xs create-service xsuaa space bookshop-demo-uaa -c xs-security.json",
+    "create:uaa-service-key": "xs create-service-key bookshop-demo-uaa dev",
+    "get:uaa-service-key": "xs service-key bookshop-demo-uaa dev",
+    "create:cf-uaa-service-key": "cf create-service-key bookshop-demo-uaa dev",
+    "get:cf-uaa-service-key": "cf service-key bookshop-demo-uaa dev",
+    "create:hdi-shared": "xs create-service hana hdi-shared bookshop-demo-db-service",
+    "create:hdi-service-key": "xs create-service-key bookshop-demo-db-service dev",
+    "get:hdi-service-key": "xs service-key bookshop-demo-db-service dev",
+    "create:cf-hdi-service-key": "cf create-service-key bookshop-demo-db-service dev",
+    "get:cf-hdi-service-key": "cf service-key bookshop-demo-db-service dev",
+    "build": "run-s build:clean build:copycsntoproxy",
+    "build:clean": "cds build/all --clean",
+    "build:xs-security": "cds compile srv/ --to xsuaa > xs-security.json",
+    "build:cf": "cp mta-cf.yaml mta.yaml && mbt build -p=cf && rm mta.yaml",
+    "build:xsa": "cp mta-xsa.yaml mta.yaml && mbt build -p=xsa && rm mta.yaml",
+    "build:standalone": "cp mta-standAlone.yaml mta.yaml && mbt build -p=xsa && rm mta.yaml",
+    "build:copycsntoproxy": "copyfiles -f gen/srv/srv/csn.json standalone-v2-proxy/gen/",
+    "debug": "node --inspect node_modules/@sap/cds/bin/cds.js run",
+    "start": "cds run",
+    "start:forExcel": "node srv/index.js",
+    "build:deploy:start": "run-s build deploy start",
+    "watch": "cds run --with-mocks --in-memory --watch",
+    "test": "jest",
+    "update:cf:uaa": "cf update-service bookshop-demo-uaa -c xs-security.json",
+    "undeploy:xsa": "xs undeploy bookshop-demo --delete-services --delete-service-brokers",
+    "undeploy:cf": "cf undeploy bookshop-demo --delete-service-keys --delete-services --delete-service-brokers"
+  },
+  "cds": {
+    "hana": {
+      "deploy-format": "hdbtable"
+    },
+    "requires": {
+      "GWSAMPLE_BASIC": {
+        "kind": "odata",
+        "model": "srv/external/GWSAMPLE_BASIC",
+        "credentials": {
+          "destination": "ES5",
+          "requestTimeout": 30000,
+          "path": "/sap/opu/odata/iwbep/GWSAMPLE_BASIC"
+        }
+      },
+      "ZPDCDS_SRV": {
+        "kind": "odata",
+        "model": "srv/external/ZPDCDS_SRV",
+        "credentials": {
+          "destination": "ES5",
+          "requestTimeout": 30000,
+          "path": "/sap/opu/odata/sap/ZPDCDS_SRV"
+        }
+      },
+      "xsuaa-api": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "bookshop-demo-uaa-apiaccess",
+          "requestTimeout": 30000
+        }
+      },
+      "CloudFoundryAPI": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "CloudFoundryAPI",
+          "requestTimeout": 30000
+        }
+      },
+      "flow": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "flow",
+          "requestTimeout": 30000
+        }
+      },
+      "API_CV_ATTACHMENT_SRV": {
+        "kind": "odata",
+        "model": "srv/external/API_CV_ATTACHMENT_SRV"
+      },
+      "db": {
+        "kind": "sqlite",
+        "model": [
+          "db"
+        ],
+        "credentials": {
+          "database": "db/bookshop.db"
+        }
+      }
+    },
+    "[dev-uaa]": {
+      "requires": {
+        "uaa": {
+          "kind": "xsuaa"
+        }
+      },
+      "auth": {
+        "passport": {
+          "strategy": "JWT"
+        }
+      }
+    },
+    "[dev-hana]": {
+      "requires": {
+        "db": {
+          "kind": "hana"
+        }
+      }
+    },
+    "[production]": {
+      "requires": {
+        "db": {
+          "kind": "hana"
+        },
+        "uaa": {
+          "kind": "xsuaa"
+        }
+      },
+      "auth": {
+        "passport": {
+          "strategy": "JWT"
+        }
+      }
+    },
+    "odata": {
+      "version": "v4"
+    }
+  }
+}
